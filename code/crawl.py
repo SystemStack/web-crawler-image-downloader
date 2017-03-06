@@ -12,7 +12,7 @@ import sys
 
 import crawling
 import reporting
-
+from html.parser import HTMLParser
 
 ARGS = argparse.ArgumentParser(description="Web crawler")
 ARGS.add_argument(

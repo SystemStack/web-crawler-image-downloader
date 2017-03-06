@@ -8,6 +8,9 @@ import re
 import time
 import urllib.parse
 
+from html.parser import HTMLParser
+import htmlParse
+
 try:
     # Python 3.4.
     from asyncio import JoinableQueue as Queue
@@ -64,6 +67,7 @@ class Crawler:
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.root_domains = set()
         for root in roots:
+            print(root)
             parts = urllib.parse.urlparse(root)
             host, port = urllib.parse.splitport(parts.netloc)
             if not host:
