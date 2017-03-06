@@ -61,7 +61,7 @@ class TestCrawler(unittest.TestCase):
     @asyncio.coroutine
     def _create_server(self):
         app = web.Application(loop=self.loop)
-        handler_factory = app.make_handler(debug=True)
+        handler_factory = app.make_handler()
         srv = yield from self.loop.create_server(
             handler_factory, '127.0.0.1', self.port)
 

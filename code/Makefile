@@ -1,4 +1,4 @@
-PYTHON3=python3.4
+PYTHON3=python3
 test:
 	$(PYTHON3) crawl.py -q what-if.xkcd.com
 
