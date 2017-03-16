@@ -56,6 +56,10 @@ def fix_url(url):
         url = 'http://' + url
     return url
 
+def set_robots(fixedURL):
+    """Prefix a schema-less URL with http://."""
+    return fixedURL + "/robots.txt"
+
 
 def main():
     """Main program.
@@ -79,15 +83,16 @@ def main():
         asyncio.set_event_loop(loop)
     else:
         loop = asyncio.get_event_loop()
-
+    print(args.roots)
     roots = {fix_url(root) for root in args.roots}
-
+    robots_txt = [set_robots(root) for root in roots]
     crawler = crawling.Crawler(roots,
                                exclude=args.exclude,
                                strict=args.strict,
                                max_redirect=args.max_redirect,
                                max_tries=args.max_tries,
                                max_tasks=args.max_tasks,
+                               robots_txt=robots_txt
                                )
     try:
         loop.run_until_complete(crawler.crawl())  # Crawler gonna crawl.
