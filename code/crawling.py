@@ -7,9 +7,9 @@ import logging
 import re
 import time
 import urllib.parse
-
+import urllib.robotparser
 from html.parser import HTMLParser
-import htmlParse
+# import htmlParse
 
 try:
     # Python 3.4.
@@ -50,10 +50,11 @@ class Crawler:
     This manages two sets of URLs: 'urls' and 'done'.  'urls' is a set of
     URLs seen, and 'done' is a list of FetchStatistics.
     """
+    robots=[]
     def __init__(self, roots,
                  exclude=None, strict=True,  # What to crawl.
                  max_redirect=10, max_tries=4,  # Per-url limits.
-                 max_tasks=10, *, loop=None):
+                 max_tasks=10, *, loop=None, robots_txt=[]):
         self.loop = loop or asyncio.get_event_loop()
         self.roots = roots
         self.exclude = exclude
@@ -66,8 +67,13 @@ class Crawler:
         self.done = []
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.root_domains = set()
+        self.robots_txt = robots_txt
+        for url in robots_txt:
+            rp = urllib.robotparser.RobotFileParser(url)
+            rp.set_url(url)
+            self.robots.append(rp)
+
         for root in roots:
-            print(root)
             parts = urllib.parse.urlparse(root)
             host, port = urllib.parse.splitport(parts.netloc)
             if not host:
@@ -132,7 +138,6 @@ class Crawler:
         content_type = None
         encoding = None
         body = yield from response.read()
-
         if response.status == 200:
             content_type = response.headers.get('content-type')
             pdict = {}
@@ -143,7 +148,11 @@ class Crawler:
             encoding = pdict.get('charset', 'utf-8')
             if content_type in ('text/html', 'application/xml'):
                 text = yield from response.text()
-
+                # HTMLParser = html_parse()
+                # print("3")
+                # HTMLParser.feed(body)
+                # HTMLParser.close()
+                # print("4")
                 # Replace href with (?:href|src) to follow image links.
                 urls = set(re.findall(r'''(?i)href=["']([^\s"'<>]+)''',
                                       text))
@@ -257,6 +266,10 @@ class Crawler:
         if not self.host_okay(host):
             LOGGER.debug('skipping non-root host in %r', url)
             return False
+        for e in self.robots:
+            e.read()
+            if not e.can_fetch("*", url):
+                return False
         return True
 
     def add_url(self, url, max_redirect=None):
