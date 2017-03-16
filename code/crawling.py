@@ -149,10 +149,8 @@ class Crawler:
             if content_type in ('text/html', 'application/xml'):
                 text = yield from response.text()
                 # HTMLParser = html_parse()
-                # print("3")
                 # HTMLParser.feed(body)
                 # HTMLParser.close()
-                # print("4")
                 # Replace href with (?:href|src) to follow image links.
                 urls = set(re.findall(r'''(?i)href=["']([^\s"'<>]+)''',
                                       text))
