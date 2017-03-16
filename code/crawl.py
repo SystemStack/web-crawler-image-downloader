@@ -83,7 +83,6 @@ def main():
         asyncio.set_event_loop(loop)
     else:
         loop = asyncio.get_event_loop()
-    print(args.roots)
     roots = {fix_url(root) for root in args.roots}
     robots_txt = [set_robots(root) for root in roots]
     crawler = crawling.Crawler(roots,
