@@ -9,7 +9,7 @@ import time
 import urllib.parse
 import urllib.robotparser
 from html.parser import HTMLParser
-# import htmlParse
+from math import floor
 
 try:
     # Python 3.4.
@@ -131,6 +131,15 @@ class Crawler:
         """Record the FetchStatistic for completed / failed URL."""
         self.done.append(fetch_statistic)
 
+    def levi_print(self, levi_log, length=80):
+        # print("".ljust(length,"#"))##VERY BEGINNING
+        someInteger = floor((len(levi_log))/2)
+        str = "#" + levi_log.rjust(int((length/2)+someInteger))
+        str = str.ljust(length-1)
+        print(str + "#", end="\r")
+        # print("\n")
+        # print("".ljust(length,"#"))##VERY END
+
     @asyncio.coroutine
     def parse_links(self, response):
         """Return a FetchStatistic and list of links."""
@@ -141,23 +150,18 @@ class Crawler:
         if response.status == 200:
             content_type = response.headers.get('content-type')
             pdict = {}
-
             if content_type:
                 content_type, pdict = cgi.parse_header(content_type)
 
             encoding = pdict.get('charset', 'utf-8')
             if content_type in ('text/html', 'application/xml'):
                 text = yield from response.text()
-                # HTMLParser = html_parse()
-                # HTMLParser.feed(body)
-                # HTMLParser.close()
+                # @TODO add HTML Parser
                 # Replace href with (?:href|src) to follow image links.
-                urls = set(re.findall(r'''(?i)href=["']([^\s"'<>]+)''',
-                                      text))
-                if urls:
-                    LOGGER.info('got %r distinct urls from %r',
-                                len(urls), response.url)
+                urls = set(re.findall(r'''(?i)href=["']([^\s"'<>]+)''', text))
+                # printable =
                 for url in urls:
+                    self.levi_print('got '+str((len(urls)))+' distinct urls from '+response.url)
                     normalized = urllib.parse.urljoin(response.url, url)
                     defragmented, frag = urllib.parse.urldefrag(normalized)
                     if self.url_allowed(defragmented):
