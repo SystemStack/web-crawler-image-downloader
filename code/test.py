@@ -65,7 +65,7 @@ class TestCrawler(unittest.TestCase):
     @asyncio.coroutine
     def _create_server(self):
         app = web.Application(loop=self.loop)
-        handler_factory = app.make_handler()
+        handler_factory = app.make_handler(debug=True)
         srv = yield from self.loop.create_server(
             handler_factory, '127.0.0.1', self.port)
 
@@ -112,10 +112,10 @@ class TestCrawler(unittest.TestCase):
 
     def assertStat(self, stat_index=0, **kwargs):
         stat = self.crawler.done[stat_index]
-        print("\n", stat,"\nThat's a stat^")
         for name, value in kwargs.items():
             msg = '{}.{} not equal to {!r}'.format(stat, name, value)
             self.assertEqual(getattr(stat, name), value, msg)
+
 
     def crawl(self, urls=None, *args, **kwargs):
         if self.crawler:
@@ -267,12 +267,12 @@ class TestCrawler(unittest.TestCase):
         self.assertStat(0, url=foo, status=302, next_url=baz)
 
         # We fetched bar and saw it redirected to baz.
-        # self.assertStat(1, url=bar, status=302, next_url=baz)
-        #
-        # # But we only fetched baz once.
-        # self.assertStat(2, url=baz, status=302, next_url=quux)
-        # self.assertStat(3, url=quux, status=404)
-        # self.assertDoneCount(4)
+        self.assertStat(1, url=bar, status=302, next_url=baz)
+
+        # But we only fetched baz once.
+        self.assertStat(2, url=baz, status=302, next_url=quux)
+        self.assertStat(3, url=quux, status=404)
+        self.assertDoneCount(4)
 
     def test_max_tasks(self):
         n_tasks = 0
@@ -361,7 +361,6 @@ class TestCrawler(unittest.TestCase):
         self.add_page(body=body)
         self.crawl()
         self.assertStat(num_urls=0)
-
 
 if __name__ == '__main__':
     unittest.main()

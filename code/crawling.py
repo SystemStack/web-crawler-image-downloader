@@ -8,6 +8,7 @@ import re
 import time
 import urllib.parse
 import urllib.robotparser
+import shutil
 from html.parser import HTMLParser
 from math import floor
 
@@ -67,11 +68,17 @@ class Crawler:
         self.done = []
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.root_domains = set()
+
+        self.columns = shutil.get_terminal_size((80, 20))[0]
         self.robots_txt = robots_txt
-        for url in robots_txt:
-            rp = urllib.robotparser.RobotFileParser(url)
-            rp.set_url(url)
-            self.robots.append(rp)
+        self.printvar = {'REDIRECT': 'No redirects yet',
+                         'URL': 'No URLS Yet',
+                         'TIMEELAPSED': '0s'}
+
+        # for url in robots_txt:
+        #     rp = urllib.robotparser.RobotFileParser(url)
+        #     rp.set_url(url)
+        #     self.robots.append(rp)
 
         for root in roots:
             parts = urllib.parse.urlparse(root)
@@ -131,14 +138,19 @@ class Crawler:
         """Record the FetchStatistic for completed / failed URL."""
         self.done.append(fetch_statistic)
 
-    def levi_print(self, levi_log, length=80):
-        # print("".ljust(length,"#"))##VERY BEGINNING
-        someInteger = floor((len(levi_log))/2)
-        str = "#" + levi_log.rjust(int((length/2)+someInteger))
-        str = str.ljust(length-1)
-        print(str + "#", end="\r")
-        # print("\n")
-        # print("".ljust(length,"#"))##VERY END
+    def levi_print(self):
+        print('\b'*((2+len(self.printvar))*self.columns))#backspaces to clear console
+        print('#'*self.columns)
+        for k,v in self.printvar.items():
+            length = floor((len(v))/2)
+            v = "#"+k+":" + v.rjust(int((self.columns/2)+length))
+            v = v.ljust(self.columns-1)
+            print(v+"#")
+        print('#'*self.columns, end="\r")
+
+    def set_url(self, str, slot):
+        self.printvar[slot] = str
+
 
     @asyncio.coroutine
     def parse_links(self, response):
@@ -159,9 +171,9 @@ class Crawler:
                 # @TODO add HTML Parser
                 # Replace href with (?:href|src) to follow image links.
                 urls = set(re.findall(r'''(?i)href=["']([^\s"'<>]+)''', text))
-                # printable =
                 for url in urls:
-                    self.levi_print('got '+str((len(urls)))+' distinct urls from '+response.url)
+                    self.set_url('got '+str((len(urls)))+' distinct urls from '+response.url, 'URL')
+                    self.levi_print()
                     normalized = urllib.parse.urljoin(response.url, url)
                     defragmented, frag = urllib.parse.urldefrag(normalized)
                     if self.url_allowed(defragmented):
@@ -177,8 +189,9 @@ class Crawler:
             encoding=encoding,
             num_urls=len(links),
             num_new_urls=len(links - self.seen_urls))
-
         return stat, links
+
+
 
     @asyncio.coroutine
     def fetch(self, url, max_redirect):
@@ -231,7 +244,8 @@ class Crawler:
                 if next_url in self.seen_urls:
                     return
                 if max_redirect > 0:
-                    LOGGER.info('redirect to %r from %r', next_url, url)
+                    self.set_url('To ' + next_url + ' from ' + url, 'REDIRECT')
+                    self.levi_print()
                     self.add_url(next_url, max_redirect - 1)
                 else:
                     LOGGER.error('redirect limit reached for %r from %r',
@@ -268,10 +282,10 @@ class Crawler:
         if not self.host_okay(host):
             LOGGER.debug('skipping non-root host in %r', url)
             return False
-        for e in self.robots:
-            e.read()
-            if not e.can_fetch("*", url):
-                return False
+        # for e in self.robots:
+        #     e.read()
+        #     if not e.can_fetch("*", url):
+        #         return False
         return True
 
     def add_url(self, url, max_redirect=None):
