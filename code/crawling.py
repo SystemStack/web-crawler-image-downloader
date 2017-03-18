@@ -68,12 +68,9 @@ class Crawler:
         self.done = []
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.root_domains = set()
-
         self.columns = shutil.get_terminal_size((80, 20))[0]
         self.robots_txt = robots_txt
-        self.printvar = {'REDIRECT': 'No redirects yet',
-                         'URL': 'No URLS Yet',
-                         'TIMEELAPSED': '0s'}
+        self.print_var = {}
 
         # for url in robots_txt:
         #     rp = urllib.robotparser.RobotFileParser(url)
@@ -138,19 +135,26 @@ class Crawler:
         """Record the FetchStatistic for completed / failed URL."""
         self.done.append(fetch_statistic)
 
-    def levi_print(self):
-        print('\b'*((2+len(self.printvar))*self.columns))#backspaces to clear console
-        print('#'*self.columns)
-        for k,v in self.printvar.items():
+    def set_and_print(self, slot, string):
+        self.print_var[slot] = string
+        self.time_helper()
+        self.table_print()
+
+    def time_helper(self):
+        elapsed = int(time.time() - self.t0)
+        m, s = divmod(elapsed, 60)
+        h, m = divmod(m, 60)
+        self.print_var['TIME_ELAPSED'] = "%d:%02d:%02d" % (h, m, s)
+
+    def table_print(self):
+        print('\b'*((2+len(self.print_var))*self.columns))#Backspace all printed characters
+        print('#' * self.columns) #Print top of box
+        for k,v in self.print_var.items():#Print all of the keys inside of the box formatted by their
             length = floor((len(v))/2)
             v = "#"+k+":" + v.rjust(int((self.columns/2)+length))
-            v = v.ljust(self.columns-1)
+            v = v.ljust(self.columns-1)#Fill in spaces on the right
             print(v+"#")
-        print('#'*self.columns, end="\r")
-
-    def set_url(self, str, slot):
-        self.printvar[slot] = str
-
+        print('#'*self.columns, end="\r") #Print bottom of box with carraige return so we can print over ourselves
 
     @asyncio.coroutine
     def parse_links(self, response):
@@ -172,8 +176,7 @@ class Crawler:
                 # Replace href with (?:href|src) to follow image links.
                 urls = set(re.findall(r'''(?i)href=["']([^\s"'<>]+)''', text))
                 for url in urls:
-                    self.set_url('got '+str((len(urls)))+' distinct urls from '+response.url, 'URL')
-                    self.levi_print()
+                    self.set_and_print('URL', 'got ' + str((len(urls))) + ' distinct urls from ' + response.url)
                     normalized = urllib.parse.urljoin(response.url, url)
                     defragmented, frag = urllib.parse.urldefrag(normalized)
                     if self.url_allowed(defragmented):
@@ -244,8 +247,7 @@ class Crawler:
                 if next_url in self.seen_urls:
                     return
                 if max_redirect > 0:
-                    self.set_url('To ' + next_url + ' from ' + url, 'REDIRECT')
-                    self.levi_print()
+                    self.set_and_print('REDIRECT', 'To ' + next_url + ' from ' + url)
                     self.add_url(next_url, max_redirect - 1)
                 else:
                     LOGGER.error('redirect limit reached for %r from %r',

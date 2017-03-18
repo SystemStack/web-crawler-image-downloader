@@ -26,3 +26,4 @@ class MyHTMLParser(HTMLParser):
 
 
 #cls | python .\crawl.py uwosh.edu wisc.edu
+#cls | python .\crawl.py xkcd.com
