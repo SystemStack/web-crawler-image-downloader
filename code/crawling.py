@@ -147,14 +147,13 @@ class Crawler:
         self.print_var['TIME_ELAPSED'] = "%d:%02d:%02d" % (h, m, s)
 
     def table_print(self):
-        print('\b'*((2+len(self.print_var))*self.columns))#Backspace all printed characters
-        print('#' * self.columns) #Print top of box
+        print('\b'*(1+ ((len(self.print_var))*self.columns)))#Backspace all printed characters
         for k,v in self.print_var.items():#Print all of the keys inside of the box formatted by their
             length = floor((len(v))/2)
             v = "#"+k+":" + v.rjust(int((self.columns/2)+length))
             v = v.ljust(self.columns-1)#Fill in spaces on the right
             print(v+"#")
-        print('#'*self.columns, end="\r") #Print bottom of box with carraige return so we can print over ourselves
+        print('', end="\r") #Print bottom of box with carriage return so we can print over ourselves
 
     @asyncio.coroutine
     def parse_links(self, response):
