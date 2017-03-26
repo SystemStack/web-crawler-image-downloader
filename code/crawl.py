@@ -25,6 +25,9 @@ ARGS.add_argument(
     'roots', nargs='*',
     default=[], help='Root URL (may be repeated)')
 ARGS.add_argument(
+    'robots', nargs='*',
+    default=[], help='Add a robots.txt url')
+ARGS.add_argument(
     '--max_redirect', action='store', type=int, metavar='N',
     default=10, help='Limit redirection chains (for 301, 302 etc.)')
 ARGS.add_argument(
@@ -56,11 +59,6 @@ def fix_url(url):
         url = 'http://' + url
     return url
 
-def set_robots(fixedURL):
-    """Prefix a schema-less URL with http://."""
-    return fixedURL + "/robots.txt"
-
-
 def main():
     """Main program.
 
@@ -84,14 +82,14 @@ def main():
     else:
         loop = asyncio.get_event_loop()
     roots = {fix_url(root) for root in args.roots}
-    robots_txt = [set_robots(root) for root in roots]
+
     crawler = crawling.Crawler(roots,
                                exclude=args.exclude,
                                strict=args.strict,
                                max_redirect=args.max_redirect,
                                max_tries=args.max_tries,
                                max_tasks=args.max_tasks,
-                               robots_txt=robots_txt
+                               robots_txt=args.robots
                                )
     try:
         loop.run_until_complete(crawler.crawl())  # Crawler gonna crawl.

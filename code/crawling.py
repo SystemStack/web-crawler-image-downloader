@@ -72,10 +72,10 @@ class Crawler:
         self.robots_txt = robots_txt
         self.print_var = {}
 
-        # for url in robots_txt:
-        #     rp = urllib.robotparser.RobotFileParser(url)
-        #     rp.set_url(url)
-        #     self.robots.append(rp)
+        for url in robots_txt:
+            rp = urllib.robotparser.RobotFileParser(url)
+            rp.set_url(url)
+            self.robots.append(rp)
 
         for root in roots:
             parts = urllib.parse.urlparse(root)
@@ -283,10 +283,10 @@ class Crawler:
         if not self.host_okay(host):
             LOGGER.debug('skipping non-root host in %r', url)
             return False
-        # for e in self.robots:
-        #     e.read()
-        #     if not e.can_fetch("*", url):
-        #         return False
+        for e in self.robots:
+            e.read()
+            if not e.can_fetch("*", url):
+                return False
         return True
 
     def add_url(self, url, max_redirect=None):

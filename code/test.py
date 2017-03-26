@@ -10,9 +10,11 @@ import unittest2 as unittest
 import urllib.robotparser
 
 from aiohttp import ClientError, web
-from htmlParse import MyHTMLParser
 
 import crawling
+
+from htmlParse import MyHTMLParser
+from fileDownloader import File_Downloader
 
 @contextmanager
 def capture_logging():
@@ -144,8 +146,17 @@ class TestCrawler(unittest.TestCase):
                                     loop=self.loop,
                                     robots_txt=['http://uwosh.edu/robots.txt'])
         self.addCleanup(crawler.close)
-        self.assertTrue(crawler.url_allowed("http://www.uwosh.edu/"))
-        self.assertFalse(crawler.url_allowed("http://www.uwosh.edu/intranet/"))
+        self.assertTrue(crawler.url_allowed('http://www.uwosh.edu/'))
+        self.assertFalse(crawler.url_allowed('http://www.uwosh.edu/intranet/'))
+
+    def test_file_download(self):
+        downloader = File_Downloader()
+        filename = "py.png"
+        downloader.download_image("http://docs.python.org/3/_static/py.png", filename)
+        import os.path
+        self.assertFalse(os.path.isfile(downloader.directory))
+        self.assertFalse(os.path.isfile(filename))
+        self.assertTrue(os.path.isfile(downloader.directory+filename))
 
     def test_link(self):
         # "/" links to foo, which is missing.
@@ -155,7 +166,6 @@ class TestCrawler(unittest.TestCase):
         self.assertStat(url=self.app_url + '/',
                         num_urls=1,
                         num_new_urls=1)
-
         self.assertStat(1, url=self.app_url + '/foo', status=404)
 
     def test_link_cycle(self):
@@ -260,10 +270,6 @@ class TestCrawler(unittest.TestCase):
         # Start crawling foo and bar. We follow the foo -> baz redirect but
         # not bar -> baz, since by then baz is already seen.
         self.crawl([foo, bar])
-        import pprint
-        pprint.pprint(self.crawler.done)
-        print(foo)
-        print(baz)
         self.assertStat(0, url=foo, status=302, next_url=baz)
 
         # We fetched bar and saw it redirected to baz.
