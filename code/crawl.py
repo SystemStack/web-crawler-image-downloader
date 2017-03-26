@@ -25,9 +25,6 @@ ARGS.add_argument(
     'roots', nargs='*',
     default=[], help='Root URL (may be repeated)')
 ARGS.add_argument(
-    'robots', nargs='*',
-    default=[], help='Add a robots.txt url')
-ARGS.add_argument(
     '--max_redirect', action='store', type=int, metavar='N',
     default=10, help='Limit redirection chains (for 301, 302 etc.)')
 ARGS.add_argument(
@@ -51,6 +48,12 @@ ARGS.add_argument(
 ARGS.add_argument(
     '-q', '--quiet', action='store_const', const=0, dest='level',
     default=2, help='Only log errors')
+ARGS.add_argument(
+    '--robots', nargs='*',
+    default=[], help='Add a robots.txt url')
+ARGS.add_argument(
+    '-d', '--download', action='store_true', dest='download_images',
+    default=False, help='Download all images')
 
 
 def fix_url(url):
@@ -82,14 +85,14 @@ def main():
     else:
         loop = asyncio.get_event_loop()
     roots = {fix_url(root) for root in args.roots}
-
     crawler = crawling.Crawler(roots,
                                exclude=args.exclude,
                                strict=args.strict,
                                max_redirect=args.max_redirect,
                                max_tries=args.max_tries,
                                max_tasks=args.max_tasks,
-                               robots_txt=args.robots
+                               robots_txt=args.robots,
+                               download_images=args.download_images
                                )
     try:
         loop.run_until_complete(crawler.crawl())  # Crawler gonna crawl.
@@ -98,6 +101,14 @@ def main():
         print('\nInterrupted\n')
     finally:
         reporting.report(crawler)
+        if args.download_images:
+            try:
+                loop.run_until_complete(crawler.download_image_queue())
+            except KeyboardInterrupt:
+                sys.stderr.flush()
+                print('\nInterrupted\n')
+
+
         crawler.close()
 
         # next two lines are required for actual aiohttp resource cleanup

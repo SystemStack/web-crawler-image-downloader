@@ -6,11 +6,13 @@ from collections import namedtuple
 import logging
 import re
 import time
+
 import urllib.parse
 import urllib.robotparser
 import shutil
-from html.parser import HTMLParser
 from math import floor
+from htmlParse import MyHTMLParser
+from fileDownloader import File_Downloader
 
 try:
     # Python 3.4.
@@ -55,7 +57,8 @@ class Crawler:
     def __init__(self, roots,
                  exclude=None, strict=True,  # What to crawl.
                  max_redirect=10, max_tries=4,  # Per-url limits.
-                 max_tasks=10, *, loop=None, robots_txt=[]):
+                 max_tasks=10, *, loop=None,
+                 robots_txt=[], download_images=False):
         self.loop = loop or asyncio.get_event_loop()
         self.roots = roots
         self.exclude = exclude
@@ -71,11 +74,16 @@ class Crawler:
         self.columns = shutil.get_terminal_size((80, 20))[0]
         self.robots_txt = robots_txt
         self.print_var = {}
+        self.download_images = download_images
 
         for url in robots_txt:
             rp = urllib.robotparser.RobotFileParser(url)
             rp.set_url(url)
             self.robots.append(rp)
+
+        if self.download_images:
+            self.image_downloader = File_Downloader()
+            self.HTML_parser = MyHTMLParser()
 
         for root in roots:
             parts = urllib.parse.urlparse(root)
@@ -171,6 +179,7 @@ class Crawler:
             encoding = pdict.get('charset', 'utf-8')
             if content_type in ('text/html', 'application/xml'):
                 text = yield from response.text()
+                self.HTML_parser.feed(text)
                 # @TODO add HTML Parser
                 # Replace href with (?:href|src) to follow image links.
                 urls = set(re.findall(r'''(?i)href=["']([^\s"'<>]+)''', text))
@@ -298,12 +307,21 @@ class Crawler:
         self.q.put_nowait((url, max_redirect))
 
     @asyncio.coroutine
+    def download_image_queue(self):
+        try:
+            for url in self.HTML_parser.image_urls:
+                self.image_downloader.download_image(url)
+        except:
+            pass
+
+    @asyncio.coroutine
     def crawl(self):
         """Run the crawler until all finished."""
         workers = [asyncio.Task(self.work(), loop=self.loop)
                    for _ in range(self.max_tasks)]
         self.t0 = time.time()
         yield from self.q.join()
+
         self.t1 = time.time()
         for w in workers:
             w.cancel()
