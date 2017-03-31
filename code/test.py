@@ -4,9 +4,6 @@ import io
 import logging
 import socket
 import unittest2 as unittest
-# import urllib.request
-# import urllib.error
-# import urllib.parse
 import urllib.robotparser
 
 from aiohttp import ClientError, web

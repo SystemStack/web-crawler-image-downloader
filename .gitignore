@@ -3,4 +3,5 @@ polymer/
 *.pyc
 .idea/
 .gitignore
-dl_cache/
+cache_dl/
+cache_web/
