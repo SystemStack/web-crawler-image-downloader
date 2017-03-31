@@ -129,10 +129,10 @@ def main():
                 from os import makedirs
                 makedirs("../cache_web/", exist_ok=True)
                 import json
-                json_string_55 = str(image_downloader.json_dl)
-                json_string_55 = json_string_55.replace('\'', '\"')
+                json_string = str(image_downloader.json_dl)
+                json_string = json_string.replace('\'', '\"')
                 print_file = open('../cache_web/images.json', 'w')
-                print_file.write(json_string_55)
+                print_file.write(json_string)
                 # print_file.write(json.dumps(str(image_downloader.json_dl)))
                 print_file.close()
         crawler.close()
