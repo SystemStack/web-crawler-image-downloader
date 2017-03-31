@@ -152,12 +152,16 @@ class TestCrawler(unittest.TestCase):
     def test_file_download(self):
         downloader = File_Downloader()
         filename = "py.png"
-        downloader.download_image("http://docs.python.org/3/_static/py.png")
-        downloader.download_image("http://docs.python.org/3/_static/py.png")
-        downloader.download_image("http://docs.python.org/3/_static/py.png")
-        downloader.download_image("http://docs.python.org/3/_static/py.png")
-        downloader.download_image("http://www.uwosh.edu/d2lfaq/logo.png")
-        downloader.download_image("http://www.uwosh.edu/d2lfaq/logo.png")
+        @asyncio.coroutine
+        def go():
+            yield from downloader.download_image("http://docs.python.org/3/_static/py.png")
+            yield from downloader.download_image("http://docs.python.org/3/_static/py.png")
+            yield from downloader.download_image("http://docs.python.org/3/_static/py.png")
+            yield from downloader.download_image("http://docs.python.org/3/_static/py.png")
+            yield from downloader.download_image("http://www.uwosh.edu/d2lfaq/logo.png")
+            yield from downloader.download_image("http://www.uwosh.edu/d2lfaq/logo.png")
+            yield from downloader.download_image("http://www.uwosh.edu/d2lfaq/logo.png")
+        self.loop.run_until_complete(go())
         import os.path
         self.assertFalse(os.path.isfile(downloader.directory))
         self.assertFalse(os.path.isfile(filename))

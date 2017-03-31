@@ -13,6 +13,7 @@ import sys
 import crawling
 import reporting
 from html.parser import HTMLParser
+from fileDownloader import File_Downloader
 
 ARGS = argparse.ArgumentParser(description="Web crawler")
 ARGS.add_argument(
@@ -84,6 +85,7 @@ def main():
         asyncio.set_event_loop(loop)
     else:
         loop = asyncio.get_event_loop()
+
     roots = {fix_url(root) for root in args.roots}
     crawler = crawling.Crawler(roots,
                                exclude=args.exclude,
@@ -100,21 +102,28 @@ def main():
         sys.stderr.flush()
         print('\nInterrupted\n')
     finally:
-        reporting.report(crawler)
-        if args.download_images:
-            try:
-                loop.run_until_complete(crawler.download_image_queue())
-            except KeyboardInterrupt:
-                sys.stderr.flush()
-                print('\nInterrupted\n')
-
-
-        crawler.close()
-
+        # reporting.report(crawler)
         # next two lines are required for actual aiohttp resource cleanup
         loop.stop()
         loop.run_forever()
 
+        # hideous if block, handles async downloading of images
+        # but it needs a polish
+        if args.download_images:
+            try:
+                image_downloader = File_Downloader()
+                # Remove the only unhandled url in the image_urls set: None
+                crawler.HTML_parser.image_urls.discard(None)
+                @asyncio.coroutine
+                def async_download():
+                    for url in crawler.HTML_parser.image_urls:
+                        yield from image_downloader.download_image(url)
+                loop.run_until_complete(async_download())
+            except KeyboardInterrupt:
+                sys.stderr.flush()
+                print('\nInterrupted\n')
+
+        crawler.close()
         loop.close()
 
 

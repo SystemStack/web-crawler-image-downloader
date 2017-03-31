@@ -12,7 +12,7 @@ import urllib.robotparser
 import shutil
 from math import floor
 from htmlParse import MyHTMLParser
-from fileDownloader import File_Downloader
+
 
 try:
     # Python 3.4.
@@ -82,7 +82,6 @@ class Crawler:
             self.robots.append(rp)
 
         if self.download_images:
-            self.image_downloader = File_Downloader()
             self.HTML_parser = MyHTMLParser()
 
         for root in roots:
@@ -155,13 +154,17 @@ class Crawler:
         self.print_var['TIME_ELAPSED'] = "%d:%02d:%02d" % (h, m, s)
 
     def table_print(self):
-        print('\b'*(1+ ((len(self.print_var))*self.columns)))#Backspace all printed characters
-        for k,v in self.print_var.items():#Print all of the keys inside of the box formatted by their
+        #Backspace all printed characters
+        print('\b'*(((3+len(self.print_var))*self.columns)))
+        #Print all of the keys inside of the box formatted by their
+        for k,v in self.print_var.items():
             length = floor((len(v))/2)
             v = "#"+k+":" + v.rjust(int((self.columns/2)+length))
-            v = v.ljust(self.columns-1)#Fill in spaces on the right
+            #Fill in spaces on the right
+            v = v.ljust(self.columns-1)
             print(v+"#")
-        print('', end="\r") #Print bottom of box with carriage return so we can print over ourselves
+        #Print carriage return so we can print over ourselves
+        print('', end="\r")
 
     @asyncio.coroutine
     def parse_links(self, response):
@@ -179,9 +182,10 @@ class Crawler:
             encoding = pdict.get('charset', 'utf-8')
             if content_type in ('text/html', 'application/xml'):
                 text = yield from response.text()
-                self.HTML_parser.feed(text)
-                # @TODO add HTML Parser
-                # Replace href with (?:href|src) to follow image links.
+                # If user wants to download images, this will create a set of
+                # all of the images on the site
+                if self.download_images:
+                    self.HTML_parser.feed(text)
                 urls = set(re.findall(r'''(?i)href=["']([^\s"'<>]+)''', text))
                 for url in urls:
                     self.set_and_print('URL', 'got ' + str((len(urls))) + ' distinct urls from ' + response.url)
@@ -306,13 +310,6 @@ class Crawler:
         self.seen_urls.add(url)
         self.q.put_nowait((url, max_redirect))
 
-    @asyncio.coroutine
-    def download_image_queue(self):
-        try:
-            for url in self.HTML_parser.image_urls:
-                self.image_downloader.download_image(url)
-        except:
-            pass
 
     @asyncio.coroutine
     def crawl(self):
