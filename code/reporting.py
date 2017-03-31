@@ -25,7 +25,6 @@ def report(crawler, table=None):
         speed = 0
     stats = Stats()
     stats.table = table
-    table.tabularize_reporting(" ", "*** Report ***")
     try:
         show = list(crawler.done)
         show.sort(key=lambda _stat: _stat.url)

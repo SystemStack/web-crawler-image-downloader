@@ -29,10 +29,11 @@ class Table_Print:
         # Print all of the keys inside of the box
         for k,v in self.print_var.items():
             # Print carriage return so we can print over ourselves
-            print("#" + k + ":" + ' '*(self.longest_key - len(k)) + v, end="\r")
+            print("#" + k + ":" + ' '*(self.longest_key - len(k)) + v,end="\n")
         # Print reporting separate from crawling
         for k,v in self.print_var_reporting.items():
-            print("#" + k + ":" + ' '*(self.longest_key - len(k)) + v, end="\r")
+            print("#" + k + ":" + ' '*(self.longest_key - len(k)) + v,end="\n")
+        print('', end="\r")
 
     #Sets the string passed in, and prints it in a table format
     def tabularize(self, slot, string):
@@ -40,7 +41,7 @@ class Table_Print:
         self.print_var[slot] = s
         self.time_helper()
         self.table_left_just(slot, s)
-        # self.table_print()
+        self.table_print()
 
     def tabularize_reporting(self, slot, string):
         s = str(string)
