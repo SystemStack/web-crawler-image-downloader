@@ -1,23 +1,21 @@
 """Reporting subsystem for web crawler."""
-
 import time
-
 
 class Stats:
     """Record stats of various sorts."""
-
     def __init__(self):
         self.stats = {}
 
     def add(self, key, count=1):
+        self.table.tabularize_reporting(key, (self.stats.get(key, 0) + count))
         self.stats[key] = self.stats.get(key, 0) + count
 
-    def report(self, file=None):
+    def report(self, table=None):
+        self.table = table
         for key, count in sorted(self.stats.items()):
-            print('%10d' % count, key, file=file)
+            print('%10d' % count, key)
 
-
-def report(crawler, file=None):
+def report(crawler, table=None):
     """Print a report on all completed URLs."""
     t1 = crawler.t1 or time.time()
     dt = t1 - crawler.t0
@@ -26,26 +24,22 @@ def report(crawler, file=None):
     else:
         speed = 0
     stats = Stats()
-    print('*** Report ***', file=file)
+    stats.table = table
+    table.tabularize_reporting(" ", "*** Report ***")
     try:
         show = list(crawler.done)
         show.sort(key=lambda _stat: _stat.url)
         for stat in show:
-            url_report(stat, stats, file=file)
+            url_report(stat, stats, table)
     except KeyboardInterrupt:
-        print('\nInterrupted', file=file)
+        table.tabularize_reporting("GIGO", "Interrupted")
+
     print('Finished', len(crawler.done),
           'urls in %.3f secs' % dt,
           '(max_tasks=%d)' % crawler.max_tasks,
-          '(%.3f urls/sec/task)' % speed,
-          file=file)
-    stats.report(file=file)
-    print('Todo:', crawler.q.qsize(), file=file)
-    print('Done:', len(crawler.done), file=file)
-    print('Date:', time.ctime(), 'local time', file=file)
+          '(%.3f urls/sec/task)' % speed)
 
-
-def url_report(stat, stats, file=None):
+def url_report(stat, stats, table=None):
     """Print a report on the state for this URL.
 
     Also update the Stats instance.
@@ -53,19 +47,12 @@ def url_report(stat, stats, file=None):
     if stat.exception:
         stats.add('fail')
         stats.add('fail_' + str(stat.exception.__class__.__name__))
-        print(stat.url, 'error', stat.exception, file=file)
     elif stat.next_url:
         stats.add('redirect')
-        print(stat.url, stat.status, 'redirect', stat.next_url,
-              file=file)
+
     elif stat.content_type == 'text/html':
         stats.add('html')
         stats.add('html_bytes', stat.size)
-        print(stat.url, stat.status,
-              stat.content_type, stat.encoding,
-              stat.size,
-              '%d/%d' % (stat.num_new_urls, stat.num_urls),
-              file=file)
     else:
         if stat.status == 200:
             stats.add('other')
@@ -74,7 +61,3 @@ def url_report(stat, stats, file=None):
             stats.add('error')
             stats.add('error_bytes', stat.size)
             stats.add('status_%s' % stat.status)
-        print(stat.url, stat.status,
-              stat.content_type, stat.encoding,
-              stat.size,
-              file=file)
