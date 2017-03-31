@@ -1,3 +1,7 @@
 @*
 polymer/
 *.pyc
+.idea/
+.gitignore
+cache_dl/
+cache_web/

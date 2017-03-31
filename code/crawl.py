@@ -13,7 +13,8 @@ import sys
 import crawling
 import reporting
 from html.parser import HTMLParser
-
+from fileDownloader import File_Downloader
+from tablePrint import Table_Print
 ARGS = argparse.ArgumentParser(description="Web crawler")
 ARGS.add_argument(
     '--iocp', action='store_true', dest='iocp',
@@ -48,6 +49,15 @@ ARGS.add_argument(
 ARGS.add_argument(
     '-q', '--quiet', action='store_const', const=0, dest='level',
     default=2, help='Only log errors')
+ARGS.add_argument(
+    '--robots', nargs='*',
+    default=[], help='Add a robots.txt url')
+ARGS.add_argument(
+    '-d', '--download', action='store_true', dest='download_images',
+    default=False, help='Download all images')
+ARGS.add_argument(
+    '-sl', '--save_log', action='store', dest='save_log',
+    default="", help='Save logs of report')
 
 
 def fix_url(url):
@@ -55,11 +65,6 @@ def fix_url(url):
     if '://' not in url:
         url = 'http://' + url
     return url
-
-def set_robots(fixedURL):
-    """Prefix a schema-less URL with http://."""
-    return fixedURL + "/robots.txt"
-
 
 def main():
     """Main program.
@@ -83,15 +88,20 @@ def main():
         asyncio.set_event_loop(loop)
     else:
         loop = asyncio.get_event_loop()
+
     roots = {fix_url(root) for root in args.roots}
-    robots_txt = [set_robots(root) for root in roots]
+
+    table = Table_Print()
+    table.file = args.save_log
     crawler = crawling.Crawler(roots,
                                exclude=args.exclude,
                                strict=args.strict,
                                max_redirect=args.max_redirect,
                                max_tries=args.max_tries,
                                max_tasks=args.max_tasks,
-                               robots_txt=robots_txt
+                               robots_txt=args.robots,
+                               download_images=args.download_images,
+                               table=table
                                )
     try:
         loop.run_until_complete(crawler.crawl())  # Crawler gonna crawl.
@@ -99,15 +109,33 @@ def main():
         sys.stderr.flush()
         print('\nInterrupted\n')
     finally:
-        reporting.report(crawler)
+        reporting.report(crawler, table=table)
+        if args.download_images:
+            try:
+                image_downloader = File_Downloader()
+                # Remove the only unhandled url in the image_urls set: None
+                crawler.HTML_parser.image_urls.discard(None)
+                # Loops through all of the images found in the web crawler and downloads them
+                @asyncio.coroutine
+                def async_download():
+                    for url in crawler.HTML_parser.image_urls:
+                        yield from image_downloader.download_image(url)
+                loop.run_until_complete(async_download())
+            except KeyboardInterrupt:
+                sys.stderr.flush()
+                print('\nInterrupted\n')
+            finally:
+                # Save {image, height, width} obj array into a JSON file for website
+                from os import makedirs
+                makedirs("../cache_web/", exist_ok=True)
+                print_file = open('../cache_web/images.json', 'w')
+                print_file.write(str(image_downloader.json_dl))
+                print_file.close()
         crawler.close()
-
         # next two lines are required for actual aiohttp resource cleanup
         loop.stop()
         loop.run_forever()
-
         loop.close()
-
 
 if __name__ == '__main__':
     main()
