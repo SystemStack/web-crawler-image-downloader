@@ -128,8 +128,12 @@ def main():
                 # Save {image, height, width} obj array into a JSON file for website
                 from os import makedirs
                 makedirs("../cache_web/", exist_ok=True)
+                import json
+                json_string = str(image_downloader.json_dl)
+                json_string = json_string.replace('\'', '\"')
                 print_file = open('../cache_web/images.json', 'w')
-                print_file.write(str(image_downloader.json_dl))
+                print_file.write(json_string)
+                # print_file.write(json.dumps(str(image_downloader.json_dl)))
                 print_file.close()
         crawler.close()
         # next two lines are required for actual aiohttp resource cleanup
