@@ -4,26 +4,26 @@ class MyHTMLParser(HTMLParser):
     start_attrs = []
     image_urls = set()
 
-    def handle_starttag(self, tag, attrs):
-        self.start_tag = tag
-        if attrs != []:
-            self.start_attrs.extend(attrs)
+    # Handles self-closing tags like <br> <img> <input>
+    def handle_startendtag(self, tag, attrs):
+        if tag == "img":
+            self.image_urls.add(self.image_helper(attrs[0][1]))
 
-    def handle_endtag(self, tag):
-        self.end_tag = tag
-
-    def handle_data(self, data):
-        self.data = data
 
     def image_helper(self, url):
+        # Relative path, double slash means the browser gets to select
+        # between http and https
         if(url[:2] == "//"):
-            return url[2:]
+            return "http:" + url
+        # Relatve path but defaults to http
+        elif(url[:1] == "/"):
+            return self.root_url + url[1:]
+        # Properly formed URL
         elif(url[:4] == "http"):
             return url
+        # Malformed URL, cannot be handled
         else:
-            return None
+            print(url)
+            return
 
-    def handle_startendtag(self, tag, attrs):
-        if tag=="img":
-            self.image_urls.add(self.image_helper(attrs[0][1]))
 

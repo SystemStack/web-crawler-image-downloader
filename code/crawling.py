@@ -84,6 +84,10 @@ class Crawler:
         if self.download_images:
             self.HTML_parser = MyHTMLParser()
 
+            root_url = roots.pop()
+            roots.add(root_url + "/")
+            self.HTML_parser.root_url = root_url
+
         for root in roots:
             parts = urllib.parse.urlparse(root)
             host, port = urllib.parse.splitport(parts.netloc)

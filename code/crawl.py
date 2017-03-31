@@ -102,7 +102,7 @@ def main():
         sys.stderr.flush()
         print('\nInterrupted\n')
     finally:
-        # reporting.report(crawler)
+        reporting.report(crawler)
         # next two lines are required for actual aiohttp resource cleanup
         loop.stop()
         loop.run_forever()
@@ -112,10 +112,12 @@ def main():
         if args.download_images:
             try:
                 image_downloader = File_Downloader()
+                image_downloader.set_url(roots.pop())
                 # Remove the only unhandled url in the image_urls set: None
                 crawler.HTML_parser.image_urls.discard(None)
                 @asyncio.coroutine
                 def async_download():
+                    # print(crawler.HTML_parser.image_urls)
                     for url in crawler.HTML_parser.image_urls:
                         yield from image_downloader.download_image(url)
                 loop.run_until_complete(async_download())
@@ -125,7 +127,6 @@ def main():
 
         crawler.close()
         loop.close()
-
 
 if __name__ == '__main__':
     main()

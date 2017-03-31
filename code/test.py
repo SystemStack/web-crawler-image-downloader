@@ -128,17 +128,17 @@ class TestCrawler(unittest.TestCase):
         self.addCleanup(self.crawler.close)
         self.loop.run_until_complete(self.crawler.crawl())
 
-    def test_initialize_html_parser(self):
-        parser = MyHTMLParser()
-        htmlToBeParsed = '''<html><head some-attribute="red"><title>Test</title></head>
-                            <body><h1 color="green">Parse me!</h1></body></html>'''
-        parser.feed(htmlToBeParsed)
-        self.assertEqual("Parse me!", parser.data)
-        self.assertEqual("h1", parser.start_tag) ##last start tag
-        self.assertEqual('some-attribute', parser.start_attrs[0][0]) ##1st attribute tag
-        self.assertEqual('green', parser.start_attrs[1][1]) ##2nd attribute value
-        self.assertEqual("html", parser.end_tag)
-        parser.close()
+    # def test_initialize_html_parser(self):
+    #     parser = MyHTMLParser()
+    #     htmlToBeParsed = '''<html><head some-attribute="red"><title>Test</title></head>
+    #                         <body><h1 color="green">Parse me!</h1></body></html>'''
+    #     parser.feed(htmlToBeParsed)
+    #     self.assertEqual("Parse me!", parser.data)
+    #     self.assertEqual("h1", parser.start_tag) ##last start tag
+    #     self.assertEqual('some-attribute', parser.start_attrs[0][0]) ##1st attribute tag
+    #     self.assertEqual('green', parser.start_attrs[1][1]) ##2nd attribute value
+    #     self.assertEqual("html", parser.end_tag)
+    #     parser.close()
 
     # @TODO serve locally
     def test_robots_txt_parser(self):
