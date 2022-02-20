@@ -4,6 +4,6 @@
 #
 # Install this package with "python3 -m pip install -r requirements.txt".
 
-aiohttp==0.21
+aiohttp==3.7.4
 unittest2
 pillow
